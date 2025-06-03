@@ -64,7 +64,9 @@ static void MX_CAN2_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-char somedata[] = "Hello from Bootloader\r\n";
+char BootModeLabel[] = "Entering Bootloader\r\n";
+uint32_t ApplCntr;
+uint8_t TestVar = 1;
 
 /* USER CODE END 0 */
 
@@ -107,14 +109,40 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+  //while (1)
+  //{
     /* USER CODE END WHILE */
-	  HAL_UART_Transmit(&huart2, (uint8_t*)somedata, sizeof(somedata), HAL_MAX_DELAY);
-	  HAL_UART_Transmit(&huart3, (uint8_t*)somedata, sizeof(somedata), HAL_MAX_DELAY);
+	  //HAL_UART_Transmit(&huart2, (uint8_t*)somedata, sizeof(somedata), HAL_MAX_DELAY);
+	  //HAL_UART_Transmit(&huart3, (uint8_t*)somedata, sizeof(somedata), HAL_MAX_DELAY);
     /* USER CODE BEGIN 3 */
-  }
+  //}
+
   /* USER CODE END 3 */
+  if ( HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET)
+  {
+	  /*Entering Boot Loader*/
+	  HAL_UART_Transmit(&huart2, (uint8_t*)BootModeLabel, sizeof(BootModeLabel), HAL_MAX_DELAY);
+
+	  /*Call BootLoader Handler function*/
+	  bootloader_Uart_ReadData();
+  }
+  else
+  {
+	  /*Jump to Application Handler function*/
+	  bootloader_Jump_UserAppl();
+  }
+
+}
+
+
+void bootloader_Uart_ReadData(void)
+{
+
+}
+
+void bootloader_Jump_UserAppl(void)
+{
+
 }
 
 /**
