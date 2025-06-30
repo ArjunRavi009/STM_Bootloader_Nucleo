@@ -28,7 +28,9 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
-
+#include "stdio.h"
+#include "string.h"
+#include "stdarg.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -72,6 +74,8 @@ void bootloader_Jump_UserAppl(void);
 #define TCK_GPIO_Port GPIOA
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
+
+#define BL_DEBUG_MSG
 
 /* USER CODE BEGIN Private defines */
 

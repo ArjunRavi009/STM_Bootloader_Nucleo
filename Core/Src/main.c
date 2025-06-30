@@ -46,6 +46,9 @@ CAN_HandleTypeDef hcan2;
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 
+#define D_UART   &huart3
+#define C_UART   &huart2
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -57,6 +60,9 @@ static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_CAN1_Init(void);
 static void MX_CAN2_Init(void);
+
+static void printmsg(char *format,...);
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -64,9 +70,6 @@ static void MX_CAN2_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-char BootModeLabel[] = "Entering Bootloader\r\n";
-uint32_t ApplCntr;
-uint8_t TestVar = 1;
 
 /* USER CODE END 0 */
 
@@ -109,25 +112,22 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  //while (1)
-  //{
-    /* USER CODE END WHILE */
-	  //HAL_UART_Transmit(&huart2, (uint8_t*)somedata, sizeof(somedata), HAL_MAX_DELAY);
-	  //HAL_UART_Transmit(&huart3, (uint8_t*)somedata, sizeof(somedata), HAL_MAX_DELAY);
-    /* USER CODE BEGIN 3 */
-  //}
+
 
   /* USER CODE END 3 */
   if ( HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET)
   {
 	  /*Entering Boot Loader*/
-	  HAL_UART_Transmit(&huart2, (uint8_t*)BootModeLabel, sizeof(BootModeLabel), HAL_MAX_DELAY);
+	  printmsg("BL_DEBUG_MSG:Button is pressed .. going to BL mode\n\r");
 
 	  /*Call BootLoader Handler function*/
 	  bootloader_Uart_ReadData();
   }
   else
   {
+
+	  printmsg("BL_DEBUG_MSG:Button is NOT pressed .. going to APPL mode\n\r");
+
 	  /*Jump to Application Handler function*/
 	  bootloader_Jump_UserAppl();
   }
@@ -144,6 +144,20 @@ void bootloader_Jump_UserAppl(void)
 {
 
 }
+
+/* prints formatted string to console over UART */
+ void printmsg(char *format,...)
+ {
+	char str[80];
+#ifdef BL_DEBUG_MSG
+	/*Extract the the argument list using VA apis */
+	va_list args;
+	va_start(args, format);
+	vsnprintf(str,sizeof(str),format,args);
+	va_end(args);
+	HAL_UART_Transmit(C_UART,(uint8_t *)str, strlen(str),HAL_MAX_DELAY);
+#endif
+ }
 
 /**
   * @brief System Clock Configuration
