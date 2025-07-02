@@ -143,8 +143,40 @@ void bootloader_Uart_ReadData(void)
 void bootloader_Jump_UserAppl(void)
 {
 
-}
+   //just a function pointer to hold the address of the reset handler of the user application.
+    void (*app_reset_handler)(void);
 
+    printmsg("BL_DEBUG_MSG:bootloader_jump_to_user_app\n\r");
+
+
+    // 1. configure the MSP by reading the value from the base address of the sector 2
+    uint32_t msp_value = *(volatile uint32_t *)FLASH_SECTOR2_BASE_ADDRESS;
+    printmsg("BL_DEBUG_MSG:MSP value : %#x\n\r",msp_value);
+
+    __disable_irq();
+
+    SCB->VTOR = FLASH_SECTOR2_BASE_ADDRESS;
+
+    printmsg("BL_DEBUG_MSG:VTOR Set value : %#x\n\r",SCB->VTOR);
+
+    //This function comes from CMSIS.
+    __set_MSP(msp_value);
+
+    __enable_irq();
+
+    /* 2. Now fetch the reset handler address of the user application
+     * from the location FLASH_SECTOR2_BASE_ADDRESS+4
+     */
+    uint32_t resethandler_address = *(volatile uint32_t *) (FLASH_SECTOR2_BASE_ADDRESS + 4);
+
+    app_reset_handler = (void*) resethandler_address;
+
+    printmsg("BL_DEBUG_MSG: app reset handler addr : %#x\n\r",app_reset_handler);
+
+    //3. jump to reset handler of the user application
+    app_reset_handler();
+
+}
 /* prints formatted string to console over UART */
  void printmsg(char *format,...)
  {

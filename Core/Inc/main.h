@@ -76,6 +76,7 @@ void bootloader_Jump_UserAppl(void);
 #define SWO_GPIO_Port GPIOB
 
 #define BL_DEBUG_MSG
+#define FLASH_SECTOR2_BASE_ADDRESS  0x08008000U
 
 /* USER CODE BEGIN Private defines */
 
