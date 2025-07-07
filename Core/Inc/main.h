@@ -28,12 +28,11 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
 #include "stdio.h"
 #include "string.h"
 #include "stdarg.h"
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -49,13 +48,25 @@ extern "C" {
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
 
+#define BL_GET_VER					0x51
+#define BL_GET_HELP					0x52
+#define BL_GET_CID					0x53
+#define BL_GET_RDP_STATUS			0x54
+
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
+/* USER CODE BEGIN EFP */
+
 void bootloader_Uart_ReadData(void);
 void bootloader_Jump_UserAppl(void);
-/* USER CODE BEGIN EFP */
+
+/* BOOTLOADER service function prototypes */
+void bootloaderHandle_Get_Ver_Cmd(uint8_t* rx_buffer);
+void bootloaderHandle_Get_Help_Cmd(void);
+void bootloaderHandle_Get_ChipId_Cmd(void);
+void bootloaderHandle_Get_RDPStatus_Cmd(void);
 
 /* USER CODE END EFP */
 
@@ -75,11 +86,9 @@ void bootloader_Jump_UserAppl(void);
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
 
+/* USER CODE BEGIN Private defines */
 #define BL_DEBUG_MSG
 #define FLASH_SECTOR2_BASE_ADDRESS  0x08008000U
-
-/* USER CODE BEGIN Private defines */
-
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

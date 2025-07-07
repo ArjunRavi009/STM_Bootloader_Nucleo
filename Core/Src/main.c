@@ -46,10 +46,11 @@ CAN_HandleTypeDef hcan2;
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 
+/* USER CODE BEGIN PV */
 #define D_UART   &huart3
 #define C_UART   &huart2
 
-/* USER CODE BEGIN PV */
+uint8_t b1_rx_buffer[200];
 
 /* USER CODE END PV */
 
@@ -61,9 +62,8 @@ static void MX_USART3_UART_Init(void);
 static void MX_CAN1_Init(void);
 static void MX_CAN2_Init(void);
 
-static void printmsg(char *format,...);
-
 /* USER CODE BEGIN PFP */
+static void printmsg(char *format,...);
 
 /* USER CODE END PFP */
 
@@ -106,15 +106,10 @@ int main(void)
   MX_USART3_UART_Init();
   MX_CAN1_Init();
   MX_CAN2_Init();
+
+
   /* USER CODE BEGIN 2 */
 
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-
-
-  /* USER CODE END 3 */
   if ( HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET)
   {
 	  /*Entering Boot Loader*/
@@ -131,65 +126,14 @@ int main(void)
 	  /*Jump to Application Handler function*/
 	  bootloader_Jump_UserAppl();
   }
+  /* USER CODE END 2 */
 
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+
+
+  /* USER CODE END 3 */
 }
-
-
-void bootloader_Uart_ReadData(void)
-{
-
-}
-
-void bootloader_Jump_UserAppl(void)
-{
-
-   //just a function pointer to hold the address of the reset handler of the user application.
-    void (*app_reset_handler)(void);
-
-    printmsg("BL_DEBUG_MSG:bootloader_jump_to_user_app\n\r");
-
-
-    // 1. configure the MSP by reading the value from the base address of the sector 2
-    uint32_t msp_value = *(volatile uint32_t *)FLASH_SECTOR2_BASE_ADDRESS;
-    printmsg("BL_DEBUG_MSG:MSP value : %#x\n\r",msp_value);
-
-    __disable_irq();
-
-    SCB->VTOR = FLASH_SECTOR2_BASE_ADDRESS;
-
-    printmsg("BL_DEBUG_MSG:VTOR Set value : %#x\n\r",SCB->VTOR);
-
-    //This function comes from CMSIS.
-    __set_MSP(msp_value);
-
-    __enable_irq();
-
-    /* 2. Now fetch the reset handler address of the user application
-     * from the location FLASH_SECTOR2_BASE_ADDRESS+4
-     */
-    uint32_t resethandler_address = *(volatile uint32_t *) (FLASH_SECTOR2_BASE_ADDRESS + 4);
-
-    app_reset_handler = (void*) resethandler_address;
-
-    printmsg("BL_DEBUG_MSG: app reset handler addr : %#x\n\r",app_reset_handler);
-
-    //3. jump to reset handler of the user application
-    app_reset_handler();
-
-}
-/* prints formatted string to console over UART */
- void printmsg(char *format,...)
- {
-	char str[80];
-#ifdef BL_DEBUG_MSG
-	/*Extract the the argument list using VA apis */
-	va_list args;
-	va_start(args, format);
-	vsnprintf(str,sizeof(str),format,args);
-	va_end(args);
-	HAL_UART_Transmit(C_UART,(uint8_t *)str, strlen(str),HAL_MAX_DELAY);
-#endif
- }
 
 /**
   * @brief System Clock Configuration
@@ -418,6 +362,109 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+/* Function to handle the BootLoader service requests */
+void bootloader_Uart_ReadData(void)
+{
+	uint8_t rcv_len = 0;
+
+	/* once enter to the CUSTOM BOOTLOADER, the control will be here until next RESET */
+	while(1)
+	{
+
+		/*Reset the rx_buffer*/
+		memset(b1_rx_buffer, 0, sizeof(b1_rx_buffer));
+		HAL_UART_Receive(C_UART,b1_rx_buffer,1,HAL_MAX_DELAY);
+		rcv_len = b1_rx_buffer[0];
+		HAL_UART_Receive(C_UART, &b1_rx_buffer[1],rcv_len,HAL_MAX_DELAY);
+
+		switch(b1_rx_buffer[1])
+		{
+			case BL_GET_VER:
+				bootloaderHandle_Get_Ver_Cmd(b1_rx_buffer);
+
+			case BL_GET_HELP:
+				bootloaderHandle_Get_Help_Cmd();
+
+			case BL_GET_CID:
+				bootloaderHandle_Get_ChipId_Cmd();
+
+			case BL_GET_RDP_STATUS:
+				bootloaderHandle_Get_RDPStatus_Cmd();
+
+		}
+
+	}
+
+}
+
+/* Function to handle the jump to application from BootLoader */
+void bootloader_Jump_UserAppl(void)
+{
+
+   //just a function pointer to hold the address of the reset handler of the user application.
+    void (*app_reset_handler)(void);
+
+    printmsg("BL_DEBUG_MSG:bootloader_jump_to_user_app\n\r");
+
+
+    // 1. configure the MSP by reading the value from the base address of the sector 2
+    uint32_t msp_value = *(volatile uint32_t *)FLASH_SECTOR2_BASE_ADDRESS;
+    printmsg("BL_DEBUG_MSG:MSP value : %#x\n\r",msp_value);
+
+    __disable_irq();
+
+    SCB->VTOR = FLASH_SECTOR2_BASE_ADDRESS;
+
+    printmsg("BL_DEBUG_MSG:VTOR Set value : %#x\n\r",SCB->VTOR);
+
+    //This function comes from CMSIS.
+    __set_MSP(msp_value);
+
+    __enable_irq();
+
+    /* 2. Now fetch the reset handler address of the user application
+     * from the location FLASH_SECTOR2_BASE_ADDRESS+4
+     */
+    uint32_t resethandler_address = *(volatile uint32_t *) (FLASH_SECTOR2_BASE_ADDRESS + 4);
+
+    app_reset_handler = (void*) resethandler_address;
+
+    printmsg("BL_DEBUG_MSG: app reset handler addr : %#x\n\r",app_reset_handler);
+
+    //3. jump to reset handler of the user application
+    app_reset_handler();
+
+}
+/* prints formatted string to console over UART */
+ void printmsg(char *format,...)
+ {
+	char str[80];
+#ifdef BL_DEBUG_MSG
+	/*Extract the the argument list using VA apis */
+	va_list args;
+	va_start(args, format);
+	vsnprintf(str,sizeof(str),format,args);
+	va_end(args);
+	HAL_UART_Transmit(C_UART,(uint8_t *)str, strlen(str),HAL_MAX_DELAY);
+#endif
+ }
+
+
+ /*****BOOTLOADER Service function implementations*****/
+
+ /* BOOTLOADER service to read the Version Number of the BOOTLOADER SW */
+void bootloaderHandle_Get_Ver_Cmd(uint8_t* rx_buffer)
+{
+
+
+}
+
+void bootloaderHandle_Get_Help_Cmd(void){}
+
+void bootloaderHandle_Get_ChipId_Cmd(void){}
+
+void bootloaderHandle_Get_RDPStatus_Cmd(void){}
 
 /* USER CODE END 4 */
 
