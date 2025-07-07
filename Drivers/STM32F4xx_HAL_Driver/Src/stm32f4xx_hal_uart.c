@@ -2895,34 +2895,6 @@ HAL_StatusTypeDef HAL_HalfDuplex_EnableTransmitter(UART_HandleTypeDef *huart)
   *                the configuration information for the specified UART module.
   * @retval HAL status
   */
-/**
-  * @}
-  */
-
-/** @defgroup UART_Exported_Functions_Group4 Peripheral State and Errors functions
-  *  @brief   UART State and Errors functions
-  *
-@verbatim
-  ==============================================================================
-                 ##### Peripheral State and Errors functions #####
-  ==============================================================================
- [..]
-   This subsection provides a set of functions allowing to return the State of
-   UART communication process, return Peripheral Errors occurred during communication
-   process
-   (+) HAL_UART_GetState() API can be helpful to check in run-time the state of the UART peripheral.
-   (+) HAL_UART_GetError() check in run-time errors that could be occurred during communication.
-
-@endverbatim
-  * @{
-  */
-
-/**
-  * @brief  Returns the UART state.
-  * @param  huart  Pointer to a UART_HandleTypeDef structure that contains
-  *                the configuration information for the specified UART module.
-  * @retval HAL state
-  */
 HAL_StatusTypeDef HAL_HalfDuplex_EnableReceiver(UART_HandleTypeDef *huart)
 {
   uint32_t tmpreg = 0x00U;
@@ -2952,7 +2924,34 @@ HAL_StatusTypeDef HAL_HalfDuplex_EnableReceiver(UART_HandleTypeDef *huart)
   return HAL_OK;
 }
 
+/**
+  * @}
+  */
 
+/** @defgroup UART_Exported_Functions_Group4 Peripheral State and Errors functions
+  *  @brief   UART State and Errors functions
+  *
+@verbatim
+  ==============================================================================
+                 ##### Peripheral State and Errors functions #####
+  ==============================================================================
+ [..]
+   This subsection provides a set of functions allowing to return the State of
+   UART communication process, return Peripheral Errors occurred during communication
+   process
+   (+) HAL_UART_GetState() API can be helpful to check in run-time the state of the UART peripheral.
+   (+) HAL_UART_GetError() check in run-time errors that could be occurred during communication.
+
+@endverbatim
+  * @{
+  */
+
+/**
+  * @brief  Returns the UART state.
+  * @param  huart  Pointer to a UART_HandleTypeDef structure that contains
+  *                the configuration information for the specified UART module.
+  * @retval HAL state
+  */
 HAL_UART_StateTypeDef HAL_UART_GetState(const UART_HandleTypeDef *huart)
 {
   uint32_t temp1 = 0x00U, temp2 = 0x00U;
