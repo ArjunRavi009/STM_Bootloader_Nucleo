@@ -52,6 +52,12 @@ UART_HandleTypeDef huart3;
 #define D_UART   &huart3
 #define C_UART   &huart2
 
+#define CRC_VALIDATE_OK 		1U
+#define CRC_VALIDATE_NOT_OK 	0U
+
+#define BL_ACK 		0xA5
+#define BL_NACK 	0x7F
+
 uint8_t b1_rx_buffer[200];
 
 /* USER CODE END PV */
@@ -72,6 +78,11 @@ static void printmsg(char *format,...);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+static void bootloader_send_ACK(uint8_t followlen);
+static void bootloader_send_NACK(void);
+static uint8_t bootloader_Validate_Crc(uint8_t* PData, uint32_t datalen, uint32_t host_crc);
+static uint8_t get_bootloader_version(void);
+static void bootloader_uart_write_data(uint8_t *pBuffer,uint32_t len);
 
 /* USER CODE END 0 */
 
@@ -399,6 +410,9 @@ void bootloader_Uart_ReadData(void)
 {
 	uint8_t rcv_len = 0;
 
+	 printmsg("BL_DEBUG_MSG:Start polling for BOOTLOADER service requests\n\r");
+
+
 	/* once enter to the CUSTOM BOOTLOADER, the control will be here until next RESET */
 	while(1)
 	{
@@ -485,9 +499,34 @@ void bootloader_Jump_UserAppl(void)
  /*****BOOTLOADER Service function implementations*****/
 
  /* BOOTLOADER service to read the Version Number of the BOOTLOADER SW */
-void bootloaderHandle_Get_Ver_Cmd(uint8_t* rx_buffer)
+void bootloaderHandle_Get_Ver_Cmd(uint8_t *rx_buffer)
 {
+	uint8_t bl_version;
+	uint32_t commandpacketlength;
+	uint32_t host_crc;
 
+	commandpacketlength = rx_buffer[0]+1;
+	host_crc = *((uint32_t*) (rx_buffer+commandpacketlength-4));
+
+	/*DO the CRC check ::
+	 * check to transmit ACK / NACK */
+	if ( CRC_VALIDATE_OK==
+		bootloader_Validate_Crc(rx_buffer, commandpacketlength-4,host_crc))
+	{
+		 printmsg("BL_DEBUG_MSG:checksum success !!\n");
+
+		/*0xA5*/
+		bootloader_send_ACK(1);
+
+        bl_version=get_bootloader_version();
+        printmsg("BL_DEBUG_MSG:BL_VER : %d %#x\n",bl_version,bl_version);
+        bootloader_uart_write_data(&bl_version,1);
+	}
+	else
+	{
+		/*0x7F*/
+		bootloader_send_NACK();
+	}
 
 }
 
@@ -496,6 +535,63 @@ void bootloaderHandle_Get_Help_Cmd(void){}
 void bootloaderHandle_Get_ChipId_Cmd(void){}
 
 void bootloaderHandle_Get_RDPStatus_Cmd(void){}
+
+
+/* Static functions */
+static void bootloader_send_ACK(uint8_t followlen)
+{
+	uint8_t ACKBuff[2];
+
+	ACKBuff[0] = BL_ACK;
+	ACKBuff[1] = followlen;
+	HAL_UART_Transmit(C_UART,ACKBuff,2,HAL_MAX_DELAY);
+
+}
+static void bootloader_send_NACK(void)
+{
+	uint8_t NACKBuff;
+
+	NACKBuff = BL_NACK;
+	HAL_UART_Transmit(C_UART,&NACKBuff,1,HAL_MAX_DELAY);
+
+}
+static uint8_t bootloader_Validate_Crc(uint8_t *PData, uint32_t datalen, uint32_t host_crc)
+{
+	uint8_t retVal = CRC_VALIDATE_NOT_OK;
+	uint32_t calc_crc = 0xff;
+	uint32_t i_data;
+
+	for(uint8_t i=0; i< datalen; i++)
+	{
+		i_data = PData[i];
+		calc_crc = HAL_CRC_Accumulate(&hcrc,&i_data,1);
+	}
+
+	 /* Reset CRC Calculation Unit */
+	__HAL_CRC_DR_RESET(&hcrc);
+
+	if(calc_crc == host_crc)
+	{
+		retVal = CRC_VALIDATE_OK;
+	}
+
+	return retVal;
+}
+
+static uint8_t get_bootloader_version(void)
+{
+
+	uint8_t retval;
+	retval = BL_VERSION_INFO;
+	return retval;
+}
+
+static void bootloader_uart_write_data(uint8_t *pBuffer,uint32_t len)
+{
+    /*you can replace the below ST's USART driver API call with your MCUs driver API call */
+	HAL_UART_Transmit(C_UART,pBuffer,len,HAL_MAX_DELAY);
+
+}
 
 /* USER CODE END 4 */
 

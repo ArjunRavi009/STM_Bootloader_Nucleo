@@ -34,6 +34,7 @@ extern "C" {
 #include "stdio.h"
 #include "string.h"
 #include "stdarg.h"
+#include "stm32f4xx_hal_crc.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -91,7 +92,9 @@ void bootloaderHandle_Get_RDPStatus_Cmd(void);
 /* USER CODE BEGIN Private defines */
 #define BL_DEBUG_MSG
 #define FLASH_SECTOR2_BASE_ADDRESS  0x08008000U
-/* USER CODE END Private defines */
+
+#define BL_VERSION_INFO 	0x11;
+/* USER CODE END Private defines */c
 
 #ifdef __cplusplus
 }
